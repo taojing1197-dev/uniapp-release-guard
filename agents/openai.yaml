@@ -1,0 +1,4 @@
+interface:
+  display_name: "UniApp Release Guard"
+  short_description: "Check H5, WeChat, and Alipay release readiness"
+  default_prompt: "Use $uniapp-release-guard to check this UniApp project before release."

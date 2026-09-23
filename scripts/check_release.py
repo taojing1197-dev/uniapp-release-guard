@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Read-only release readiness checks for UniApp projects."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+
+TARGETS = {
+    "h5": ("build:h5", Path("dist/build/h5")),
+    "weixin": ("build:mp-weixin", Path("dist/build/mp-weixin")),
+    "alipay": ("build:mp-alipay", Path("dist/build/mp-alipay")),
+}
+
+
+def finding(level: str, code: str, message: str, path: str = "") -> dict[str, str]:
+    return {"level": level, "code": code, "message": message, "path": path}
+
+
+def first_existing(root: Path, candidates: tuple[str, ...]) -> Path | None:
+    for candidate in candidates:
+        path = root / candidate
+        if path.is_file():
+            return path
+    return None
+
+
+def load_package(root: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
+    path = root / "package.json"
+    if not path.is_file():
+        return {}, [finding("error", "missing_package", "package.json is required", str(path))]
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {}, [finding("error", "invalid_package", f"cannot parse package.json: {exc}", str(path))]
+    if not isinstance(data, dict):
+        return {}, [finding("error", "invalid_package", "package.json must contain an object", str(path))]
+    return data, []
+
+
+def audit(root: Path, targets: list[str], require_builds: bool) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    package, package_findings = load_package(root)
+    findings.extend(package_findings)
+    scripts = package.get("scripts", {}) if isinstance(package, dict) else {}
+    if not isinstance(scripts, dict):
+        findings.append(finding("error", "invalid_scripts", "package.json scripts must be an object", str(root / "package.json")))
+        scripts = {}
+
+    manifest = first_existing(root, ("src/manifest.json", "manifest.json"))
+    if manifest is None:
+        findings.append(finding("error", "missing_manifest", "manifest.json or src/manifest.json is required"))
+    pages = first_existing(root, ("src/pages.json", "pages.json"))
+    if pages is None:
+        findings.append(finding("warning", "missing_pages", "pages.json was not found"))
+
+    for target in targets:
+        script_name, output = TARGETS[target]
+        if not isinstance(scripts.get(script_name), str) or not scripts[script_name].strip():
+            findings.append(finding("error", "missing_build_script", f"missing npm script {script_name}", "package.json"))
+        output_path = root / output
+        if not output_path.is_dir():
+            level = "error" if require_builds else "warning"
+            findings.append(finding(level, "missing_build_output", f"build output for {target} was not found", str(output_path)))
+        elif not any(output_path.iterdir()):
+            level = "error" if require_builds else "warning"
+            findings.append(finding(level, "empty_build_output", f"build output for {target} is empty", str(output_path)))
+    return findings
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("root", nargs="?", default=".", type=Path)
+    parser.add_argument("--targets", default="h5,weixin,alipay", help="comma-separated: h5,weixin,alipay")
+    parser.add_argument("--require-builds", action="store_true")
+    parser.add_argument("--json", action="store_true", dest="as_json")
+    args = parser.parse_args()
+    root = args.root.expanduser().resolve()
+    targets = [value.strip() for value in args.targets.split(",") if value.strip()]
+    unknown = sorted(set(targets) - set(TARGETS))
+    if unknown:
+        print(f"error: unknown target(s): {', '.join(unknown)}", file=sys.stderr)
+        return 2
+    if not targets:
+        print("error: at least one target is required", file=sys.stderr)
+        return 2
+
+    findings = audit(root, targets, args.require_builds)
+    errors = sum(item["level"] == "error" for item in findings)
+    warnings = sum(item["level"] == "warning" for item in findings)
+    result = {"root": str(root), "targets": targets, "errors": errors, "warnings": warnings, "findings": findings}
+    if args.as_json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        print(f"targets={','.join(targets)} errors={errors} warnings={warnings}")
+        for item in findings:
+            suffix = f" ({item['path']})" if item["path"] else ""
+            print(f"{item['level'].upper()} {item['code']}: {item['message']}{suffix}")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
