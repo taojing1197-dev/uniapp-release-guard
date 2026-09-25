@@ -13,6 +13,8 @@ python3 scripts/check_release.py /path/to/uniapp --targets h5,weixin,alipay
 python3 -m unittest discover -s tests -v
 ```
 
+Target names also accept the familiar `mp-weixin` and `mp-alipay` aliases.
+
 See `references/checks.md` for check semantics.
 
 ## Contributing

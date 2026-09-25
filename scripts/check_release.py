@@ -15,6 +15,13 @@ TARGETS = {
     "weixin": ("build:mp-weixin", Path("dist/build/mp-weixin")),
     "alipay": ("build:mp-alipay", Path("dist/build/mp-alipay")),
 }
+TARGET_ALIASES = {
+    "h5": "h5",
+    "weixin": "weixin",
+    "mp-weixin": "weixin",
+    "alipay": "alipay",
+    "mp-alipay": "alipay",
+}
 
 
 def finding(level: str, code: str, message: str, path: str = "") -> dict[str, str]:
@@ -75,19 +82,20 @@ def audit(root: Path, targets: list[str], require_builds: bool) -> list[dict[str
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", nargs="?", default=".", type=Path)
-    parser.add_argument("--targets", default="h5,weixin,alipay", help="comma-separated: h5,weixin,alipay")
+    parser.add_argument("--targets", default="h5,weixin,alipay", help="comma-separated: h5,weixin,alipay (mp-weixin/mp-alipay aliases are accepted)")
     parser.add_argument("--require-builds", action="store_true")
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args()
     root = args.root.expanduser().resolve()
-    targets = [value.strip() for value in args.targets.split(",") if value.strip()]
-    unknown = sorted(set(targets) - set(TARGETS))
+    requested_targets = [value.strip().lower() for value in args.targets.split(",") if value.strip()]
+    unknown = sorted(set(requested_targets) - set(TARGET_ALIASES))
     if unknown:
         print(f"error: unknown target(s): {', '.join(unknown)}", file=sys.stderr)
         return 2
-    if not targets:
+    if not requested_targets:
         print("error: at least one target is required", file=sys.stderr)
         return 2
+    targets = list(dict.fromkeys(TARGET_ALIASES[target] for target in requested_targets))
 
     findings = audit(root, targets, args.require_builds)
     errors = sum(item["level"] == "error" for item in findings)

@@ -35,6 +35,19 @@ class ReleaseGuardTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertGreaterEqual(report["errors"], 2)
 
+    def test_platform_aliases_are_normalized_and_deduplicated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            scripts = {"build:mp-weixin": "uni build -p mp-weixin"}
+            (root / "package.json").write_text(json.dumps({"scripts": scripts}), encoding="utf-8")
+            (root / "manifest.json").write_text("{}", encoding="utf-8")
+            (root / "pages.json").write_text("{}", encoding="utf-8")
+            result = self.run_check(root, "--targets", "mp-weixin,weixin")
+            report = json.loads(result.stdout)
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(report["targets"], ["weixin"])
+            self.assertEqual(report["warnings"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

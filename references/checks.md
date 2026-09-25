@@ -14,6 +14,8 @@ Target names:
 - `weixin` expects `build:mp-weixin` and output `dist/build/mp-weixin`
 - `alipay` expects `build:mp-alipay` and output `dist/build/mp-alipay`
 
+The aliases `mp-weixin` and `mp-alipay` are accepted. Repeated aliases are normalized so the same target is checked only once.
+
 Missing source files or requested build scripts are errors. Missing `pages.json`, unrequested common targets, and missing output folders are warnings unless `--require-builds` is used.
 
 The CLI does not prove runtime correctness. After a clean check, run project-specific tests and inspect the built target in its browser or platform developer tool.
