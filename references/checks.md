@@ -5,6 +5,7 @@ The CLI is read-only. It detects common UniApp source files and verifies that ea
 ```bash
 python3 scripts/check_release.py /path/to/project --targets h5,weixin,alipay
 python3 scripts/check_release.py . --targets h5,weixin --require-builds
+python3 scripts/check_release.py . --targets h5 --strict
 python3 scripts/check_release.py . --json
 ```
 
@@ -17,5 +18,6 @@ Target names:
 The aliases `mp-weixin` and `mp-alipay` are accepted. Repeated aliases are normalized so the same target is checked only once.
 
 Missing source files or requested build scripts are errors. Missing `pages.json`, unrequested common targets, and missing output folders are warnings unless `--require-builds` is used.
+Use `--strict` in CI when every warning should fail the check.
 
 The CLI does not prove runtime correctness. After a clean check, run project-specific tests and inspect the built target in its browser or platform developer tool.

@@ -84,6 +84,7 @@ def main() -> int:
     parser.add_argument("root", nargs="?", default=".", type=Path)
     parser.add_argument("--targets", default="h5,weixin,alipay", help="comma-separated: h5,weixin,alipay (mp-weixin/mp-alipay aliases are accepted)")
     parser.add_argument("--require-builds", action="store_true")
+    parser.add_argument("--strict", action="store_true", help="return failure when warnings are present")
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args()
     root = args.root.expanduser().resolve()
@@ -108,7 +109,7 @@ def main() -> int:
         for item in findings:
             suffix = f" ({item['path']})" if item["path"] else ""
             print(f"{item['level'].upper()} {item['code']}: {item['message']}{suffix}")
-    return 1 if errors else 0
+    return 1 if errors or (args.strict and warnings) else 0
 
 
 if __name__ == "__main__":

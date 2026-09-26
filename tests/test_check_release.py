@@ -48,6 +48,18 @@ class ReleaseGuardTests(unittest.TestCase):
             self.assertEqual(report["targets"], ["weixin"])
             self.assertEqual(report["warnings"], 1)
 
+    def test_strict_mode_fails_on_warnings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "package.json").write_text(json.dumps({"scripts": {"build:h5": "uni build -p h5"}}), encoding="utf-8")
+            (root / "manifest.json").write_text("{}", encoding="utf-8")
+            (root / "pages.json").write_text("{}", encoding="utf-8")
+            result = self.run_check(root, "--targets", "h5", "--strict")
+            report = json.loads(result.stdout)
+            self.assertEqual(report["errors"], 0)
+            self.assertEqual(report["warnings"], 1)
+            self.assertEqual(result.returncode, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
