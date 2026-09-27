@@ -88,6 +88,9 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args()
     root = args.root.expanduser().resolve()
+    if not root.is_dir():
+        print(f"error: project root not found or is not a directory: {root}", file=sys.stderr)
+        return 2
     requested_targets = [value.strip().lower() for value in args.targets.split(",") if value.strip()]
     unknown = sorted(set(requested_targets) - set(TARGET_ALIASES))
     if unknown:

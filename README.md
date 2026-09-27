@@ -15,6 +15,7 @@ python3 -m unittest discover -s tests -v
 
 Target names also accept the familiar `mp-weixin` and `mp-alipay` aliases.
 Use `--strict` when warnings should fail a CI or release gate.
+Missing or non-directory project roots fail immediately with a clear input error.
 
 See `references/checks.md` for check semantics.
 

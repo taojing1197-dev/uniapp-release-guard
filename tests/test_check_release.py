@@ -60,6 +60,14 @@ class ReleaseGuardTests(unittest.TestCase):
             self.assertEqual(report["warnings"], 1)
             self.assertEqual(result.returncode, 1)
 
+    def test_missing_project_root_is_reported_clearly(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "missing"
+            result = self.run_check(missing, "--targets", "h5")
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("project root not found", result.stderr)
+            self.assertEqual(result.stdout, "")
+
 
 if __name__ == "__main__":
     unittest.main()
