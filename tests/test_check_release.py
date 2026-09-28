@@ -68,6 +68,18 @@ class ReleaseGuardTests(unittest.TestCase):
             self.assertIn("project root not found", result.stderr)
             self.assertEqual(result.stdout, "")
 
+    def test_empty_configuration_files_are_blocking_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "package.json").write_text(json.dumps({"scripts": {"build:h5": "uni build -p h5"}}), encoding="utf-8")
+            (root / "manifest.json").touch()
+            (root / "pages.json").touch()
+            result = self.run_check(root, "--targets", "h5")
+            report = json.loads(result.stdout)
+            codes = {item["code"] for item in report["findings"]}
+            self.assertEqual(result.returncode, 1)
+            self.assertTrue({"empty_manifest", "empty_pages"}.issubset(codes))
+
 
 if __name__ == "__main__":
     unittest.main()

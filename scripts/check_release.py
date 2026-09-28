@@ -36,6 +36,15 @@ def first_existing(root: Path, candidates: tuple[str, ...]) -> Path | None:
     return None
 
 
+def require_nonempty(path: Path, code: str, label: str) -> list[dict[str, str]]:
+    try:
+        if path.stat().st_size > 0:
+            return []
+    except OSError as exc:
+        return [finding("error", code, f"cannot inspect {label}: {exc}", str(path))]
+    return [finding("error", code, f"{label} must not be empty", str(path))]
+
+
 def load_package(root: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
     path = root / "package.json"
     if not path.is_file():
@@ -61,9 +70,13 @@ def audit(root: Path, targets: list[str], require_builds: bool) -> list[dict[str
     manifest = first_existing(root, ("src/manifest.json", "manifest.json"))
     if manifest is None:
         findings.append(finding("error", "missing_manifest", "manifest.json or src/manifest.json is required"))
+    else:
+        findings.extend(require_nonempty(manifest, "empty_manifest", "manifest.json"))
     pages = first_existing(root, ("src/pages.json", "pages.json"))
     if pages is None:
         findings.append(finding("warning", "missing_pages", "pages.json was not found"))
+    else:
+        findings.extend(require_nonempty(pages, "empty_pages", "pages.json"))
 
     for target in targets:
         script_name, output = TARGETS[target]
