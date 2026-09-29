@@ -2,7 +2,7 @@
 
 An open-source Codex skill and zero-dependency CLI for checking UniApp release readiness across H5, WeChat, and Alipay.
 
-It protects the source-versus-build boundary, verifies platform build scripts and configuration files, and optionally requires non-empty target outputs. It is designed to complement—not replace—project-specific tests and platform developer tools.
+It protects the source-versus-build boundary, verifies platform build scripts and configuration files, and optionally requires target outputs containing real files rather than metadata or empty directories. It is designed to complement—not replace—project-specific tests and platform developer tools.
 
 ## Install and use
 

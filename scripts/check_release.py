@@ -22,6 +22,7 @@ TARGET_ALIASES = {
     "alipay": "alipay",
     "mp-alipay": "alipay",
 }
+IGNORED_BUILD_FILES = {".DS_Store", "Thumbs.db"}
 
 
 def finding(level: str, code: str, message: str, path: str = "") -> dict[str, str]:
@@ -43,6 +44,10 @@ def require_nonempty(path: Path, code: str, label: str) -> list[dict[str, str]]:
     except OSError as exc:
         return [finding("error", code, f"cannot inspect {label}: {exc}", str(path))]
     return [finding("error", code, f"{label} must not be empty", str(path))]
+
+
+def has_build_artifacts(path: Path) -> bool:
+    return any(candidate.is_file() and candidate.name not in IGNORED_BUILD_FILES for candidate in path.rglob("*"))
 
 
 def load_package(root: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
@@ -86,7 +91,7 @@ def audit(root: Path, targets: list[str], require_builds: bool) -> list[dict[str
         if not output_path.is_dir():
             level = "error" if require_builds else "warning"
             findings.append(finding(level, "missing_build_output", f"build output for {target} was not found", str(output_path)))
-        elif not any(output_path.iterdir()):
+        elif not has_build_artifacts(output_path):
             level = "error" if require_builds else "warning"
             findings.append(finding(level, "empty_build_output", f"build output for {target} is empty", str(output_path)))
     return findings

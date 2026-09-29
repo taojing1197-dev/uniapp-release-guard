@@ -80,6 +80,20 @@ class ReleaseGuardTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertTrue({"empty_manifest", "empty_pages"}.issubset(codes))
 
+    def test_metadata_and_empty_directories_are_not_build_artifacts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "package.json").write_text(json.dumps({"scripts": {"build:h5": "uni build -p h5"}}), encoding="utf-8")
+            (root / "manifest.json").write_text("{}", encoding="utf-8")
+            (root / "pages.json").write_text("{}", encoding="utf-8")
+            output = root / "dist" / "build" / "h5"
+            (output / "empty").mkdir(parents=True)
+            (output / ".DS_Store").write_bytes(b"metadata")
+            result = self.run_check(root, "--targets", "h5", "--require-builds")
+            report = json.loads(result.stdout)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("empty_build_output", {item["code"] for item in report["findings"]})
+
 
 if __name__ == "__main__":
     unittest.main()
